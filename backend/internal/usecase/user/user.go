@@ -7,6 +7,7 @@ import (
 
 	"github.com/b1g-nguyx/strangerchat-backend/internal/entity"
 	"github.com/b1g-nguyx/strangerchat-backend/internal/repo"
+	"github.com/b1g-nguyx/strangerchat-backend/pkg/filter"
 	"github.com/b1g-nguyx/strangerchat-backend/pkg/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -114,4 +115,26 @@ func (uc *UseCase) GetUser(ctx context.Context, userID string) (entity.User, err
 	}
 
 	return user, nil
+}
+
+// GetUsers processes raw input filters, sanitizes them, and fetches users from the repository.
+func (uc *UseCase) GetUsers(ctx context.Context, inputFilters map[string]any) ([]entity.User, error) {
+	// 1. Define allowed columns for querying to prevent SQL Column Injection
+	allowedFields := []string{
+		"username",
+		"email",
+		"status",
+		"is_banned",
+	}
+
+	// 2. Sanitize the filters using our utility function
+	safeFilters := filter.AllowedKeys(inputFilters, allowedFields)
+
+	// 3. Pass the strictly safe filters to the Repository layer
+	users, err := uc.repo.GetUsers(ctx, safeFilters)
+	if err != nil {
+		return nil, fmt.Errorf("UserUseCase - GetUsers - uc.repo.GetUsers: %w", err)
+	}
+
+	return users, nil
 }
