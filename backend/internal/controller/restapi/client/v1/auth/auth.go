@@ -5,6 +5,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/b1g-nguyx/strangerchat-backend/internal/usecase/user"
+	"github.com/b1g-nguyx/strangerchat-backend/pkg/apperror"
+	"github.com/b1g-nguyx/strangerchat-backend/pkg/response"
 )
 
 // Initialize the Validator instance (Can be moved to a shared config file later)
@@ -32,41 +34,41 @@ func NewAuthRoutes(handler fiber.Router, uc *user.UseCase) {
 // @Accept       json
 // @Produce      json
 // @Param        request  body      RegisterRequest  true  "Register Payload"
-// @Success      201      {object}  AuthResponse
-// @Failure      400      {object}  ErrorResponse
+// @Success      201      {object}  response.APIResponse{data=AuthData}
+// @Failure      400      {object}  response.APIResponse
 // @Router       /auth/register [post]
 func (r *authRoutes) register(c *fiber.Ctx) error {
 	var req RegisterRequest
 
-	// 1. Parse JSON body into the Request DTO
+	// 1. Parse JSON body into the Request struct
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error: "Invalid JSON format",
-		})
+		return response.Error(c, apperror.ErrInvalidJSON)
 	}
 
-	// 2. Validate data based on struct tags (Prevents SQLi, invalid emails, XSS, etc.)
+	// 2. Validate data based on struct tags
 	if err := validate.Struct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error: "Validation failed: " + err.Error(),
-		})
+		return response.Error(c, apperror.ErrValidation)
 	}
 
-	// 3. Call Usecase (Data is 100% clean at this point)
+	// 3. Call Usecase
 	newUser, accessToken, refreshToken, err := r.userUseCase.Register(c.Context(), req.Username, req.Email, req.Password)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error: err.Error(),
-		})
+		// Usecase should ideally return AppError too, but if it doesn't,
+		// our response.Error will automatically fallback to 500.
+		// If you want to force it to a specific error:
+		// return response.Error(c, apperror.ErrEmailExists)
+		return response.Error(c, err)
 	}
 
-	// 4. Return standard Response DTO
-	return c.Status(fiber.StatusCreated).JSON(AuthResponse{
-		Message:      "Registered successfully",
-		Data:         &newUser,
+	// 4. Map Entity to DTO and package it with tokens
+	authData := AuthData{
+		User:         ToUserDTO(newUser),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-	})
+	}
+
+	// 5. Return standard Response
+	return response.Success(c, fiber.StatusCreated, "Registered successfully", authData)
 }
 
 // login godoc
@@ -76,38 +78,36 @@ func (r *authRoutes) register(c *fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param        request  body      LoginRequest  true  "Login Payload"
-// @Success      200      {object}  AuthResponse
-// @Failure      400      {object}  ErrorResponse
+// @Success      200      {object}  response.APIResponse{data=AuthData}
+// @Failure      400      {object}  response.APIResponse
+// @Failure      401      {object}  response.APIResponse
 // @Router       /auth/login [post]
 func (r *authRoutes) login(c *fiber.Ctx) error {
 	var req LoginRequest
-	// 1. Parse JSON body into the Request DTO
+
+	// 1. Parse JSON body into the Request struct
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error: "Invalid JSON format",
-		})
+		return response.Error(c, apperror.ErrInvalidJSON)
 	}
 
-	// 2. Validate data based on struct tags (Prevents SQLi, invalid emails, XSS, etc.)
+	// 2. Validate data based on struct tags
 	if err := validate.Struct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error: "Validation failed: " + err.Error(),
-		})
+		return response.Error(c, apperror.ErrValidation)
 	}
 
-	// 3. Call Usecase (Data is 100% clean at this point)
+	// 3. Call Usecase
 	user, accessToken, refreshToken, err := r.userUseCase.Login(c.Context(), req.Email, req.Password)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error: err.Error(),
-		})
+		return response.Error(c, apperror.ErrInvalidEmailPwd)
 	}
 
-	// 4. Return standard Response DTO
-	return c.Status(fiber.StatusCreated).JSON(AuthResponse{
-		Message:      "Login successfully",
-		Data:         &user,
+	// 4. Map Entity to DTO and package it with tokens
+	authData := AuthData{
+		User:         ToUserDTO(user),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-	})
+	}
+
+	// 5. Return standard Response
+	return response.Success(c, fiber.StatusOK, "Login successfully", authData)
 }

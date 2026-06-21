@@ -114,3 +114,42 @@ func (r *userRepoImpl) Update(ctx context.Context, user *entity.User) error {
 
 	return err
 }
+
+func (r *userRepoImpl) GetUsers(ctx context.Context, filters map[string]any) ([]entity.User, error) {
+	var users []entity.User
+
+	query := r.Builder.Select(
+		"id", "created_at", "updated_at", "deleted_at",
+		"username", "email", "password_hash", "display_name", "avatar_url",
+		"status", "current_room_id", "refresh_token", "is_banned", "banned_at",
+	).From("users")
+
+	if len(filters) > 0 {
+		query = query.Where(filters)
+	}
+
+	rows, err := query.QueryContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user entity.User
+		err := rows.Scan(
+			&user.ID, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
+			&user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.AvatarURL,
+			&user.Status, &user.CurrentRoomID, &user.RefreshToken, &user.IsBanned, &user.BannedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}

@@ -14,5 +14,6 @@ type (
 		Update(ctx context.Context, user *entity.User) error
 		GetByID(ctx context.Context, id string) (entity.User, error)
 		GetByEmail(ctx context.Context, email string) (entity.User, error)
+		GetUsers(ctx context.Context, filters map[string]any) ([]entity.User, error)
 	}
 )

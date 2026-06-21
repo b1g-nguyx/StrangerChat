@@ -1,16 +1,39 @@
 package auth
 
-import "github.com/b1g-nguyx/strangerchat-backend/internal/entity"
+import (
+	"time"
 
-// RegisterResponse defines the standard success payload for registration.
-type AuthResponse struct {
-	Message      string       `json:"message"`
-	Data         *entity.User `json:"data"`
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
+	"github.com/b1g-nguyx/strangerchat-backend/internal/entity"
+)
+
+// UserDTO (Data Transfer Object) chỉ chứa những trường an toàn muốn trả về cho client.
+// Nó loại bỏ đi PasswordHash, DeletedAt, v.v. từ entity.User gốc.
+type UserDTO struct {
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	Email       string    `json:"email"`
+	DisplayName string    `json:"display_name"`
+	AvatarURL   string    `json:"avatar_url"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ErrorResponse defines the standard error payload.
-type ErrorResponse struct {
-	Error string `json:"error"`
+// AuthData là dữ liệu sẽ được truyền vào tham số `data` của hàm response.Success()
+type AuthData struct {
+	User         UserDTO `json:"user"`
+	AccessToken  string  `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
+}
+
+// ToUserDTO là một hàm helper để copy dữ liệu từ Entity sang DTO
+func ToUserDTO(user entity.User) UserDTO {
+	return UserDTO{
+		ID:          user.ID,
+		Username:    user.Username,
+		Email:       user.Email,
+		DisplayName: user.DisplayName,
+		AvatarURL:   user.AvatarURL,
+		Status:      user.Status,
+		CreatedAt:   user.CreatedAt,
+	}
 }
