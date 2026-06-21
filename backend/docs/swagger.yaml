@@ -1,0 +1,136 @@
+basePath: /v1
+definitions:
+  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      data:
+        $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_entity.User'
+      message:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  github_com_b1g-nguyx_strangerchat-backend_internal_entity.User:
+    properties:
+      avatar_url:
+        type: string
+      banned_at:
+        type: string
+      created_at:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+      current_room_id:
+        type: string
+      deleted_at:
+        type: string
+      display_name:
+        type: string
+      email:
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      is_banned:
+        type: boolean
+      status:
+        description: Thông tin trạng thái
+        type: string
+      updated_at:
+        example: "2026-01-01T00:00:00Z"
+        type: string
+      username:
+        description: Thông tin định danh cơ bản
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API documentation for StrangerChat Client Backend
+  title: StrangerChat Client API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login in system with username password
+      parameters:
+      - description: Login Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse'
+      summary: Login method
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with username, email, and password
+      parameters:
+      - description: Register Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+swagger: "2.0"
