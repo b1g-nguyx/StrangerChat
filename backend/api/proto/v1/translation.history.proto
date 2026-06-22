@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package grpc.v1;
 
-option go_package = "docs/proto/v1";
+option go_package = "github.com/b1g-nguyx/strangerchat-backend/internal/pb/v1";
 
 service Translation {
   rpc GetHistory (GetHistoryRequest) returns (GetHistoryResponse);

@@ -42,10 +42,10 @@ swag-v1: ### swag init
 
 proto-v1: ### generate source files from proto
 	protoc --go_out=. \
-		--go_opt=paths=source_relative \
+		--go_opt=module=github.com/b1g-nguyx/strangerchat-backend \
 		--go-grpc_out=. \
-		--go-grpc_opt=paths=source_relative \
-		docs/proto/v1/*.proto
+		--go-grpc_opt=module=github.com/b1g-nguyx/strangerchat-backend \
+		api/proto/v1/*.proto
 .PHONY: proto-v1
 
 deps: ### deps tidy + verify
@@ -75,6 +75,16 @@ admin-run: deps swag-v1 ### Run Admin Service
 	go mod download && \
 	CGO_ENABLED=0 HTTP_PORT=9090 go run -tags migrate ./cmd/svc-admin
 .PHONY: admin-run
+
+socket-run: deps ### Run Socket Service
+	go mod download && \
+	CGO_ENABLED=0 SOCKET_PORT=8081 go run ./cmd/svc-socket
+.PHONY: socket-run
+
+worker-run: deps ### Run Worker Service
+	go mod download && \
+	CGO_ENABLED=0 go run ./cmd/svc-worker
+.PHONY: worker-run
 
 docker-rm-volume: ### remove docker volume
 	docker volume rm go-clean-template_pg-data
