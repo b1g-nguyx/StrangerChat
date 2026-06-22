@@ -14,7 +14,7 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     if (!token) {
       router.push('/login');
     } else {
-      setIsChecking(false);
+      setTimeout(() => setIsChecking(false), 0);
     }
   }, [router]);
 

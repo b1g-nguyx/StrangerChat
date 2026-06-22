@@ -60,7 +60,7 @@ export const LoginForm = () => {
       </form>
 
       <p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link href="/register" className="text-[#007AFF] hover:opacity-80 transition-opacity font-medium">
           Sign up
         </Link>
