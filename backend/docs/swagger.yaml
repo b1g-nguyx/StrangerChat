@@ -1,6 +1,27 @@
 basePath: /v1
 definitions:
-  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.LoginRequest:
+  github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse:
+    properties:
+      data:
+        description: 'omitempty: hidden if nil'
+      error_code:
+        description: 'omitempty: hidden if 0 (success)'
+        type: integer
+      message:
+        type: string
+      time:
+        type: string
+    type: object
+  internal_controller_restapi_client_v1_auth.AuthData:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/internal_controller_restapi_client_v1_auth.UserDTO'
+    type: object
+  internal_controller_restapi_client_v1_auth.LoginRequest:
     properties:
       email:
         type: string
@@ -10,7 +31,7 @@ definitions:
     - email
     - password
     type: object
-  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.RegisterRequest:
+  internal_controller_restapi_client_v1_auth.RegisterRequest:
     properties:
       email:
         type: string
@@ -26,52 +47,21 @@ definitions:
     - password
     - username
     type: object
-  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse:
-    properties:
-      access_token:
-        type: string
-      data:
-        $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_entity.User'
-      message:
-        type: string
-      refresh_token:
-        type: string
-    type: object
-  github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse:
-    properties:
-      error:
-        type: string
-    type: object
-  github_com_b1g-nguyx_strangerchat-backend_internal_entity.User:
+  internal_controller_restapi_client_v1_auth.UserDTO:
     properties:
       avatar_url:
         type: string
-      banned_at:
-        type: string
       created_at:
-        example: "2026-01-01T00:00:00Z"
-        type: string
-      current_room_id:
-        type: string
-      deleted_at:
         type: string
       display_name:
         type: string
       email:
         type: string
       id:
-        example: 550e8400-e29b-41d4-a716-446655440000
         type: string
-      is_banned:
-        type: boolean
       status:
-        description: Thông tin trạng thái
-        type: string
-      updated_at:
-        example: "2026-01-01T00:00:00Z"
         type: string
       username:
-        description: Thông tin định danh cơ bản
         type: string
     type: object
 host: localhost:8080
@@ -92,18 +82,27 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.LoginRequest'
+          $ref: '#/definitions/internal_controller_restapi_client_v1_auth.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse'
+            allOf:
+            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_controller_restapi_client_v1_auth.AuthData'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse'
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
       summary: Login method
       tags:
       - Auth
@@ -118,18 +117,23 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.RegisterRequest'
+          $ref: '#/definitions/internal_controller_restapi_client_v1_auth.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse'
+            allOf:
+            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_controller_restapi_client_v1_auth.AuthData'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse'
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
       summary: Register a new user
       tags:
       - Auth

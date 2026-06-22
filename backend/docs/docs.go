@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.LoginRequest"
+                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.LoginRequest"
                         }
                     }
                 ],
@@ -43,13 +43,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.AuthData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -75,7 +93,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.RegisterRequest"
+                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.RegisterRequest"
                         }
                     }
                 ],
@@ -83,13 +101,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.AuthData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse"
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -97,7 +127,39 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.LoginRequest": {
+        "github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "omitempty: hidden if nil"
+                },
+                "error_code": {
+                    "description": "omitempty: hidden if 0 (success)",
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller_restapi_client_v1_auth.AuthData": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.UserDTO"
+                }
+            }
+        },
+        "internal_controller_restapi_client_v1_auth.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -112,7 +174,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_request.RegisterRequest": {
+        "internal_controller_restapi_client_v1_auth.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -134,48 +196,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.AuthResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "data": {
-                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_entity.User"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_b1g-nguyx_strangerchat-backend_internal_controller_restapi_client_v1_response.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_b1g-nguyx_strangerchat-backend_internal_entity.User": {
+        "internal_controller_restapi_client_v1_auth.UserDTO": {
             "type": "object",
             "properties": {
                 "avatar_url": {
                     "type": "string"
                 },
-                "banned_at": {
-                    "type": "string"
-                },
                 "created_at": {
-                    "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
-                },
-                "current_room_id": {
-                    "type": "string"
-                },
-                "deleted_at": {
                     "type": "string"
                 },
                 "display_name": {
@@ -185,22 +212,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "string",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
-                },
-                "is_banned": {
-                    "type": "boolean"
-                },
-                "status": {
-                    "description": "Thông tin trạng thái",
                     "type": "string"
                 },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2026-01-01T00:00:00Z"
+                "status": {
+                    "type": "string"
                 },
                 "username": {
-                    "description": "Thông tin định danh cơ bản",
                     "type": "string"
                 }
             }

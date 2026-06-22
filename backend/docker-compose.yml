@@ -126,6 +126,59 @@ services:
         aliases:
           - admin.lvh.me
 
+  redis:
+    container_name: redis
+    image: redis:7.2-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      app_network:
+        aliases:
+          - redis.lvh.me
+
+  svc-socket:
+    container_name: svc-socket
+    platform: linux/amd64
+    build:
+      context: .
+      args:
+        - SERVICE_NAME=svc-socket
+    environment:
+      <<: *x-backend-app-environment
+      SOCKET_PORT: "8081"
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - rabbitmq
+    networks:
+      app_network:
+        aliases:
+          - socket.lvh.me
+
+  svc-worker:
+    container_name: svc-worker
+    platform: linux/amd64
+    build:
+      context: .
+      args:
+        - SERVICE_NAME=svc-worker
+    environment:
+      <<: *x-backend-app-environment
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      REDIS_URL: "redis:6379"
+    depends_on:
+      - rabbitmq
+      - redis
+      - db
+    networks:
+      app_network:
+        aliases:
+          - worker.lvh.me
+
   nginx:
     container_name: nginx
     image: nginx:1.31.1-alpine
@@ -137,6 +190,7 @@ services:
       - rabbitmq
       - svc-chat
       - svc-admin
+      - svc-socket
     networks:
       app_network:
         aliases:
@@ -152,3 +206,4 @@ volumes:
   db_data:
   rabbitmq_data:
   nats_data:
+  redis_data:

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package grpc.v1;
+
+option go_package = "github.com/b1g-nguyx/strangerchat-backend/internal/pb/v1";
+
+service ReportService {
+  rpc SubmitReport (ReportRequest) returns (ReportResponse);
+}
+
+message ReportRequest {
+  string session_id = 1;
+  string reporter_id = 2;
+  string reported_user_id = 3;
+  string reason = 4;
+  string chat_logs_json = 5;
+}
+
+message ReportResponse {
+  bool success = 1;
+  string message = 2;
+  int32 current_report_count = 3;
+}
