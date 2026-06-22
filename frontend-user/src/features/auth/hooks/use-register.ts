@@ -17,8 +17,12 @@ export const useRegister = () => {
       const response = await authApi.register(payload);
       setAuth(response);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong');
+      }
       return false;
     } finally {
       setIsLoading(false);

@@ -1,16 +1,41 @@
-import { AuthGuard } from '@/features/auth';
+import { Button } from '@/shared/components/Button';
+import { Settings, MessageCircle } from 'lucide-react';
+import { Header } from '@/shared/components/layout/Header';
+import { Footer } from '@/shared/components/layout/Footer';
+import { HeroSlider } from '@/shared/components/layout/HeroSlider';
 
 export default function Home() {
   return (
-    <AuthGuard>
-      <div className="flex flex-col flex-1 items-center justify-center text-center p-4">
-        <h1 className="text-3xl font-bold text-slate-50 mb-4">
-          Welcome to Stranger Chat
-        </h1>
-        <p className="text-slate-400 max-w-md">
-          You are successfully logged in! The lobby and random matching features will be implemented here.
-        </p>
-      </div>
-    </AuthGuard>
+    <div className="flex flex-col min-h-[100dvh] bg-transparent">
+      <Header />
+      
+      <main className="flex-1 flex flex-col items-center justify-center p-4 py-12">
+        {/* Animated Slider Section */}
+        <HeroSlider />
+
+        {/* Call To Action Block */}
+        <div className="w-full max-w-2xl text-center flex flex-col items-center mt-4">
+          <h1 className="text-4xl sm:text-5xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-4">
+            Ready to jump in?
+          </h1>
+          <p className="text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-lg">
+            No registration required. Just click below and start chatting with a random stranger immediately.
+          </p>
+
+          <div className="flex flex-col sm:flex-row w-full max-w-md gap-4 justify-center">
+            <Button size="lg" className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 text-lg">
+              <MessageCircle className="w-5 h-5" />
+              Start Chatting
+            </Button>
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
+              <Settings className="w-5 h-5" />
+              Settings
+            </Button>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
