@@ -5,9 +5,12 @@ import (
 	"os"
 
 	"github.com/b1g-nguyx/strangerchat-backend/internal/broker"
-	"github.com/b1g-nguyx/strangerchat-backend/internal/chat"
+	chatws "github.com/b1g-nguyx/strangerchat-backend/internal/features/chat/delivery/websocket"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/features/chat/repository"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/features/chat/usecase"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -24,8 +27,17 @@ func main() {
 		defer broker.RMQ.Close()
 	}
 
+	// 1.5 Initialize Redis & Usecase
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "localhost:6379"
+	}
+	rdb := redis.NewClient(&redis.Options{Addr: redisURL})
+	redisRepo := repository.NewRedisRoomRepo(rdb)
+	chatUsecase := usecase.NewChatUsecase(redisRepo)
+
 	// 2. Initialize Hub
-	hub := chat.NewHub()
+	hub := chatws.NewHub()
 	go hub.Run()
 
 	// 3. WebSocket Upgrade Middleware
@@ -43,12 +55,13 @@ func main() {
 		sessionID := c.Query("session_id", "default_session")
 		userID := c.Query("user_id", "anonymous")
 
-		client := &chat.Client{
+		client := &chatws.Client{
 			Hub:       hub,
 			Conn:      c,
 			Send:      make(chan []byte, 256),
 			SessionID: sessionID,
 			UserID:    userID,
+			Usecase:   chatUsecase,
 		}
 
 		client.Hub.Register <- client

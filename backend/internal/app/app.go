@@ -13,14 +13,16 @@ import (
 
 	"github.com/b1g-nguyx/strangerchat-backend/config"
 	_ "github.com/b1g-nguyx/strangerchat-backend/docs"
-	clientv1auth "github.com/b1g-nguyx/strangerchat-backend/internal/controller/restapi/client/v1/auth"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/common/jwt"
+	auth_http "github.com/b1g-nguyx/strangerchat-backend/internal/features/auth/delivery/http"
+	auth_usecase "github.com/b1g-nguyx/strangerchat-backend/internal/features/auth/usecase"
+	user_http "github.com/b1g-nguyx/strangerchat-backend/internal/features/user/delivery/http"
+	user_usecase "github.com/b1g-nguyx/strangerchat-backend/internal/features/user/usecase"
 	"github.com/b1g-nguyx/strangerchat-backend/internal/repo/persistent"
-	"github.com/b1g-nguyx/strangerchat-backend/internal/usecase/user"
-	"github.com/b1g-nguyx/strangerchat-backend/pkg/jwt"
 )
 
-// RunChat initializes and starts the Client/Chat application.
-func RunChat(cfg *config.Config) {
+// RunClient initializes and starts the Client application.
+func RunClient(cfg *config.Config) {
 	// 1. Initialize Database using secure configuration
 	db, err := sql.Open("postgres", cfg.PG.URL)
 	if err != nil {
@@ -33,7 +35,8 @@ func RunChat(cfg *config.Config) {
 
 	// 4. Initialize Repository and Usecase (Dependency Injection)
 	userRepo := persistent.NewUserRepo(db)
-	userUseCase := user.New(userRepo, jwtManager)
+	// userUseCase := user_usecase.New(userRepo, jwtManager)
+	authUseCase := auth_usecase.NewAuthUseCase(userRepo, jwtManager)
 
 	// 5. Initialize Web Server
 	fiberApp := fiber.New()
@@ -43,9 +46,9 @@ func RunChat(cfg *config.Config) {
 	if cfg.Swagger.Enabled {
 		fiberApp.Get("/swagger/*", swagger.HandlerDefault)
 	}
-	
+
 	v1Group := fiberApp.Group("/v1")
-	clientv1auth.NewAuthRoutes(v1Group, userUseCase)
+	auth_http.NewClientRoutes(v1Group, authUseCase)
 
 	// 7. Run Server in a separate goroutine
 	go func() {
@@ -81,16 +84,15 @@ func RunAdmin(cfg *config.Config) {
 
 	// 3. Initialize Repository and Usecase
 	userRepo := persistent.NewUserRepo(db)
-	userUseCase := user.New(userRepo, jwtManager)
+	userUseCase := user_usecase.New(userRepo, jwtManager)
 
 	// 4. Initialize Web Server
 	fiberApp := fiber.New()
 	fiberApp.Use(cors.New())
 
-	// 5. Configure Admin Routes (Placeholder for now)
-	// TODO: Add admin-specific routes here using adminGroup
-	// adminGroup := fiberApp.Group("/admin/v1")
-	_ = userUseCase // prevent unused variable error until admin routes use it
+	// 5. Configure Admin Routes
+	adminGroup := fiberApp.Group("/admin/v1")
+	user_http.NewAdminRoutes(adminGroup, userUseCase)
 
 	// 6. Run Server (Using a different port for Admin to avoid collision with Client if run on same machine)
 	// In production, this should ideally be driven by a separate environment variable (e.g. ADMIN_HTTP_PORT)

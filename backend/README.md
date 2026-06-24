@@ -57,6 +57,7 @@ All domains are available across all four transports (REST, gRPC, AMQP RPC, NATS
 
 - [Domains](#domains)
 - [Quick start](#quick-start)
+- [Architecture & Design](#architecture--design)
 - [Project structure](#project-structure)
 - [Dependency Injection](#dependency-injection)
 - [Clean Architecture](#clean-architecture)
@@ -155,6 +156,10 @@ Check services:
 - NATS monitoring:
   - http://nats.lvh.me | http://127.0.0.1:8222/
   - Credentials: `guest` / `guest`
+
+## Architecture & Design
+
+For a deep dive into the system's design, including the Hybrid Entity Architecture and Feature Slicing, please see the [Architecture Documentation](ARCHITECTURE.md).
 
 ## Project structure
 

@@ -27,7 +27,7 @@ func InitRabbitMQ(url string) error {
 	}
 
 	_, err = ch.QueueDeclare(
-		"chat.logs.queue", // name
+		"report.events.queue", // name
 		true,              // durable
 		false,             // delete when unused
 		false,             // exclusive
@@ -42,7 +42,7 @@ func InitRabbitMQ(url string) error {
 		conn:    conn,
 		channel: ch,
 	}
-	log.Println("Connected to RabbitMQ and declared queue: chat.logs.queue")
+	log.Println("Connected to RabbitMQ and declared queue: report.events.queue")
 	return nil
 }
 
@@ -54,7 +54,7 @@ func (r *RabbitMQ) PublishMessage(ctx context.Context, msg map[string]interface{
 
 	err = r.channel.PublishWithContext(ctx,
 		"",                // exchange
-		"chat.logs.queue", // routing key
+		"report.events.queue", // routing key
 		false,             // mandatory
 		false,             // immediate
 		amqp.Publishing{

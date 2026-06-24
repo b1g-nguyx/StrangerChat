@@ -7,32 +7,43 @@ import (
 	"os"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"database/sql"
+
+	"github.com/b1g-nguyx/strangerchat-backend/internal/features/chat/repository"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/core/entity"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/repo/persistent"
+	"github.com/google/uuid"
+	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type ChatLogMessage struct {
-	SessionID string `json:"session_id"`
-	UserID    string `json:"user_id"`
-	Content   string `json:"content"`
+type ReportEventMessage struct {
+	ReporterID string   `json:"reporter_id"`
+	ReportedID string   `json:"reported_id"`
+	RoomID     string   `json:"room_id"`
+	Reason     string   `json:"reason"`
+	ChatLogs   []string `json:"chat_logs"`
 }
 
 func main() {
 	log.Println("Starting svc-worker...")
 
-	// 1. Connect to Redis
-	redisURL := os.Getenv("REDIS_URL")
-	if redisURL == "" {
-		redisURL = "localhost:6379"
+	// 1. Connect to PostgreSQL
+	pgURL := os.Getenv("POSTGRES_URL")
+	if pgURL == "" {
+		pgURL = "postgres://postgres:postgres@localhost:5432/strangerchat?sslmode=disable"
 	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisURL,
-	})
-	ctx := context.Background()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+	db, err := sql.Open("postgres", pgURL)
+	if err != nil {
+		log.Fatalf("Failed to open DB: %v", err)
 	}
-	log.Println("Connected to Redis successfully")
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to connect to Postgres: %v", err)
+	}
+	log.Println("Connected to Postgres successfully")
+
+	baseRepo := persistent.NewBaseRepo(db)
+	reportRepo := repository.NewPostgresReportRepo(baseRepo)
 
 	// 2. Connect to RabbitMQ
 	rmqURL := os.Getenv("RABBITMQ_URL")
@@ -53,7 +64,7 @@ func main() {
 
 	// 3. Declare Queue to ensure it exists
 	q, err := ch.QueueDeclare(
-		"chat.logs.queue", // name
+		"report.events.queue", // name
 		true,              // durable
 		false,             // delete when unused
 		false,             // exclusive
@@ -82,25 +93,50 @@ func main() {
 
 	go func() {
 		for d := range msgs {
-			var msg ChatLogMessage
+			var msg ReportEventMessage
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
 				log.Printf("Error unmarshaling message: %v", err)
 				continue
 			}
 
-			// Save to Redis as List: rpush chat_log:{session_id} {json_body}
-			redisKey := "chat_log:" + msg.SessionID
+			ctx := context.Background()
+			reportID := uuid.New().String()
 			
-			// Append message to the end of the list
-			if err := rdb.RPush(ctx, redisKey, string(d.Body)).Err(); err != nil {
-				log.Printf("Failed to save to Redis: %v", err)
+			// 1. Save Report
+			report := entity.Report{
+				BaseEntity: entity.BaseEntity{
+					ID:        reportID,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				ReporterID: msg.ReporterID,
+				ReportedID: msg.ReportedID,
+				Reason:     msg.Reason,
+				Status:     "PENDING",
+			}
+			if err := reportRepo.CreateReport(ctx, report); err != nil {
+				log.Printf("Failed to create report: %v", err)
 				continue
 			}
 
-			// Set Time-To-Live (TTL) to 2 hours (7200 seconds) for new keys
-			rdb.Expire(ctx, redisKey, 2*time.Hour)
-			
-			log.Printf("Saved message from %s (Session: %s) to Redis", msg.UserID, msg.SessionID)
+			// 2. Save Evidence
+			chatLogsJSON, _ := json.Marshal(msg.ChatLogs)
+			evidence := entity.ReportEvidence{
+				BaseEntity: entity.BaseEntity{
+					ID:        uuid.New().String(),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				ReportID: reportID,
+				RoomID:   msg.RoomID,
+				ChatLogs: chatLogsJSON,
+			}
+			if err := reportRepo.SaveEvidence(ctx, evidence); err != nil {
+				log.Printf("Failed to save evidence: %v", err)
+				continue
+			}
+
+			log.Printf("Saved report and evidence for Reporter: %s, Reported: %s", msg.ReporterID, msg.ReportedID)
 		}
 	}()
 

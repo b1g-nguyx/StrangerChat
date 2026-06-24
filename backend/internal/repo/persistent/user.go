@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/b1g-nguyx/strangerchat-backend/internal/entity"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/core/entity"
 	"github.com/b1g-nguyx/strangerchat-backend/internal/repo"
 )
 
