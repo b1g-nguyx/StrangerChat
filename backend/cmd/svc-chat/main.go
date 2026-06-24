@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// 2. Run
-	app.RunChat(cfg)
+	app.RunClient(cfg)
 }
 
 

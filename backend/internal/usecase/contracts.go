@@ -4,7 +4,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/b1g-nguyx/strangerchat-backend/internal/entity"
+	"github.com/b1g-nguyx/strangerchat-backend/internal/core/entity"
 )
 
 type (
