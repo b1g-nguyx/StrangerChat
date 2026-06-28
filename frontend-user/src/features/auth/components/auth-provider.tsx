@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const user = await authApi.getMe();
           setUser(user);
         }
-      } catch (error) {
+      } catch {
         // If refresh fails (e.g. no cookie or expired), ensure logged out state
         logout();
       } finally {
