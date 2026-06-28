@@ -31,7 +31,7 @@ func main() {
 	// 1. Connect to PostgreSQL
 	pgURL := os.Getenv("POSTGRES_URL")
 	if pgURL == "" {
-		pgURL = "postgres://postgres:postgres@localhost:5432/strangerchat?sslmode=disable"
+		pgURL = "postgres://user:myAwEsOm3pa55%40w0rd@localhost:5432/db?sslmode=disable"
 	}
 	db, err := sql.Open("postgres", pgURL)
 	if err != nil {

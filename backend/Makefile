@@ -20,7 +20,7 @@ help: ## Display this help screen
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 compose-up: ### Run docker compose (without backend and reverse proxy)
-	$(BASE_STACK) up --build -d db rabbitmq nats && docker compose logs -f
+	$(BASE_STACK) up --build -d db rabbitmq nats redis && docker compose logs -f
 .PHONY: compose-up
 
 compose-up-all: ### Run docker compose (with backend and reverse proxy)
@@ -35,6 +35,10 @@ compose-up-integration-test: ### Run docker compose with integration test
 compose-down: ### Down docker compose
 	$(ALL_STACK) down --remove-orphans
 .PHONY: compose-down
+
+compose-stop: ### Stop docker compose containers without removing them
+	$(ALL_STACK) stop
+.PHONY: compose-stop
 
 swag-v1: ### swag init
 	go run github.com/swaggo/swag/cmd/swag@latest init --parseDependency -g cmd/svc-chat/main.go
@@ -85,6 +89,10 @@ worker-run: deps ### Run Worker Service
 	go mod download && \
 	CGO_ENABLED=0 go run ./cmd/svc-worker
 .PHONY: worker-run
+
+run-all: ### Run all services concurrently
+	$(MAKE) -j4 client-run admin-run socket-run worker-run
+.PHONY: run-all
 
 docker-rm-volume: ### remove docker volume
 	docker volume rm go-clean-template_pg-data

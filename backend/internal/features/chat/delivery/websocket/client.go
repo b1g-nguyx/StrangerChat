@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"time"
 
@@ -10,20 +11,35 @@ import (
 	"github.com/gofiber/contrib/websocket"
 )
 
+const (
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 512
+)
+
 type Client struct {
 	Hub       *Hub
 	Conn      *websocket.Conn
 	Send      chan []byte
 	SessionID string
 	UserID    string
+	RoomID    string // Track which room the client is currently in
 	Usecase   usecase.ChatUsecase
 }
 
 func (c *Client) ReadPump() {
 	defer func() {
 		c.Hub.Unregister <- c
+		if c.RoomID != "" && c.Usecase != nil {
+			c.Usecase.LeaveRoom(context.Background(), c.RoomID, c.UserID)
+		}
 		c.Conn.Close()
 	}()
+
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	for {
 		messageType, message, err := c.Conn.ReadMessage()
@@ -35,18 +51,43 @@ func (c *Client) ReadPump() {
 		}
 
 		if messageType == websocket.TextMessage {
-			// 1. Broadcast message to other clients in Hub
-			c.Hub.Broadcast <- message
+			var wsMsg WSMessage
+			if err := json.Unmarshal(message, &wsMsg); err != nil {
+				log.Printf("Invalid message format: %v", err)
+				continue
+			}
 
-			// 2. Save to Redis via Usecase
-			if c.Usecase != nil {
-				chatMsg := entity.ChatMessage{
-					SenderID:  c.UserID,
-					Content:   string(message),
-					Timestamp: time.Now(),
+			switch wsMsg.Type {
+			case MsgTypeFindMatch:
+				if c.Usecase != nil {
+					c.Usecase.FindMatch(context.Background(), c.UserID)
 				}
-				if err := c.Usecase.SendMessage(context.Background(), c.SessionID, chatMsg); err != nil {
-					log.Printf("Failed to save chat log: %v", err)
+			case MsgTypeChat:
+				if c.RoomID == "" {
+					continue
+				}
+				
+				if c.Usecase != nil {
+					chatMsg := entity.ChatMessage{
+						SenderID:  c.UserID,
+						Content:   wsMsg.Content,
+						Timestamp: time.Now(),
+					}
+					if err := c.Usecase.SendMessage(context.Background(), c.RoomID, chatMsg); err != nil {
+						log.Printf("Failed to send message: %v", err)
+					}
+				}
+			case MsgTypeLeave:
+				if c.RoomID != "" && c.Usecase != nil {
+					c.Usecase.LeaveRoom(context.Background(), c.RoomID, c.UserID)
+					c.RoomID = "" // clear room
+				}
+				c.Hub.Unregister <- c
+			case MsgTypeReport:
+				if c.Usecase != nil {
+					if err := c.Usecase.ReportUser(context.Background(), c.UserID, wsMsg.ReportedID, wsMsg.RoomID, wsMsg.Content); err != nil {
+						log.Printf("Failed to report user: %v", err)
+					}
 				}
 			}
 		}
@@ -54,17 +95,26 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) WritePump() {
+	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		ticker.Stop()
 		c.Conn.Close()
 	}()
 
 	for {
-		message, ok := <-c.Send
-		if !ok {
-			c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-			return
+		select {
+		case message, ok := <-c.Send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			c.Conn.WriteMessage(websocket.TextMessage, message)
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
-
-		c.Conn.WriteMessage(websocket.TextMessage, message)
 	}
 }

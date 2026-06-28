@@ -74,6 +74,33 @@ func (r *userRepoImpl) GetByEmail(ctx context.Context, email string) (entity.Use
 	return user, nil
 }
 
+func (r *userRepoImpl) GetByRefreshToken(ctx context.Context, refreshToken string) (entity.User, error) {
+	var user entity.User
+
+	err := r.Builder.Select(
+		"id", "created_at", "updated_at", "deleted_at",
+		"username", "email", "password_hash", "display_name", "avatar_url",
+		"status", "current_room_id", "refresh_token", "is_banned", "banned_at",
+	).
+		From("users").
+		Where(squirrel.Eq{"refresh_token": refreshToken}).
+		QueryRowContext(ctx).
+		Scan(
+			&user.ID, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
+			&user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.AvatarURL,
+			&user.Status, &user.CurrentRoomID, &user.RefreshToken, &user.IsBanned, &user.BannedAt,
+		)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return entity.User{}, entity.ErrInvalidCredentials // or a generic not found error
+		}
+		return entity.User{}, err
+	}
+
+	return user, nil
+}
+
 func (r *userRepoImpl) Insert(ctx context.Context, user *entity.User) error {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()

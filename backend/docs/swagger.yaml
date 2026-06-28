@@ -16,8 +16,6 @@ definitions:
     properties:
       access_token:
         type: string
-      refresh_token:
-        type: string
       user:
         $ref: '#/definitions/internal_controller_restapi_client_v1_auth.UserDTO'
     type: object
@@ -104,6 +102,51 @@ paths:
           schema:
             $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
       summary: Login method
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user and clear refresh token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+      summary: Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get a new access token using a valid refresh token
+      parameters:
+      - description: refresh_token cookie
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_features_auth_delivery_http.AuthData'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+      summary: Refresh token
       tags:
       - Auth
   /auth/register:

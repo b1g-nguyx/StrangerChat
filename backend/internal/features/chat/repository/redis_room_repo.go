@@ -15,6 +15,10 @@ type RedisRoomRepo interface {
 	DeleteRoom(ctx context.Context, roomID string) error
 	AppendChatLog(ctx context.Context, roomID string, message entity.ChatMessage, ttl time.Duration) error
 	GetChatLog(ctx context.Context, roomID string) ([]entity.ChatMessage, error)
+	EnqueueMatchmaking(ctx context.Context, userID string) error
+	DequeueMatchmaking(ctx context.Context, timeout time.Duration) (string, error)
+	PublishEvent(ctx context.Context, channel string, payload interface{}) error
+	SubscribeEvent(ctx context.Context, channel string) *redis.PubSub
 }
 
 type redisRoomRepoImpl struct {
@@ -65,4 +69,31 @@ func (r *redisRoomRepoImpl) GetChatLog(ctx context.Context, roomID string) ([]en
 		}
 	}
 	return messages, nil
+}
+
+func (r *redisRoomRepoImpl) EnqueueMatchmaking(ctx context.Context, userID string) error {
+	return r.client.RPush(ctx, "matchmaking_queue", userID).Err()
+}
+
+func (r *redisRoomRepoImpl) DequeueMatchmaking(ctx context.Context, timeout time.Duration) (string, error) {
+	res, err := r.client.BLPop(ctx, timeout, "matchmaking_queue").Result()
+	if err != nil {
+		return "", err
+	}
+	if len(res) == 2 {
+		return res[1], nil
+	}
+	return "", redis.Nil
+}
+
+func (r *redisRoomRepoImpl) PublishEvent(ctx context.Context, channel string, payload interface{}) error {
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return r.client.Publish(ctx, channel, string(bytes)).Err()
+}
+
+func (r *redisRoomRepoImpl) SubscribeEvent(ctx context.Context, channel string) *redis.PubSub {
+	return r.client.Subscribe(ctx, channel)
 }

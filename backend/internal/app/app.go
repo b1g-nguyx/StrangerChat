@@ -31,7 +31,7 @@ func RunClient(cfg *config.Config) {
 	defer db.Close()
 
 	// 3. Initialize shared libraries with environment variables
-	jwtManager := jwt.New(cfg.JWT.Secret, cfg.JWT.TokenExpiry)
+	jwtManager := jwt.New(cfg.JWT.Secret, cfg.JWT.AccessTokenExpiry)
 
 	// 4. Initialize Repository and Usecase (Dependency Injection)
 	userRepo := persistent.NewUserRepo(db)
@@ -40,7 +40,11 @@ func RunClient(cfg *config.Config) {
 
 	// 5. Initialize Web Server
 	fiberApp := fiber.New()
-	fiberApp.Use(cors.New())
+	fiberApp.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.CORS.AllowedOrigins,
+		AllowCredentials: true,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+	}))
 
 	// 6. Configure Routes
 	if cfg.Swagger.Enabled {
@@ -80,7 +84,7 @@ func RunAdmin(cfg *config.Config) {
 	defer db.Close()
 
 	// 2. Initialize shared libraries
-	jwtManager := jwt.New(cfg.JWT.Secret, cfg.JWT.TokenExpiry)
+	jwtManager := jwt.New(cfg.JWT.Secret, cfg.JWT.AccessTokenExpiry)
 
 	// 3. Initialize Repository and Usecase
 	userRepo := persistent.NewUserRepo(db)

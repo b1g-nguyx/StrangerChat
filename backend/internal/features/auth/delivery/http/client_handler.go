@@ -24,7 +24,33 @@ func NewClientRoutes(handler fiber.Router, uc *auth_usecase.AuthUseCase) {
 	{
 		h.Post("/register", r.register)
 		h.Post("/login", r.login)
+		h.Post("/refresh", r.refresh)
+		h.Post("/logout", r.logout)
 	}
+}
+
+func setRefreshTokenCookie(c *fiber.Ctx, token string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Path:     "/",
+		MaxAge:   7 * 24 * 60 * 60, // 7 days in seconds
+		Secure:   false,            // Set to true in production with HTTPS
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
+}
+
+func clearRefreshTokenCookie(c *fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   false,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
 }
 
 // register godoc
@@ -62,10 +88,12 @@ func (r *clientRoutes) register(c *fiber.Ctx) error {
 
 	// 4. Map Entity to DTO and package it with tokens
 	authData := AuthData{
-		User:         ToUserDTO(newUser),
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		User:        ToUserDTO(newUser),
+		AccessToken: accessToken,
 	}
+
+	// Set refresh token in HttpOnly Cookie
+	setRefreshTokenCookie(c, refreshToken)
 
 	// 5. Return standard Response
 	return response.Success(c, fiber.StatusCreated, "Registered successfully", authData)
@@ -103,11 +131,63 @@ func (r *clientRoutes) login(c *fiber.Ctx) error {
 
 	// 4. Map Entity to DTO and package it with tokens
 	authData := AuthData{
-		User:         ToUserDTO(user),
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		User:        ToUserDTO(user),
+		AccessToken: accessToken,
 	}
+
+	// Set refresh token in HttpOnly Cookie
+	setRefreshTokenCookie(c, refreshToken)
 
 	// 5. Return standard Response
 	return response.Success(c, fiber.StatusOK, "Login successfully", authData)
+}
+
+// refresh godoc
+// @Summary      Refresh token
+// @Description  Get a new access token using a valid refresh token
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        Cookie   header    string  true  "refresh_token cookie"
+// @Success      200      {object}  response.APIResponse{data=AuthData}
+// @Failure      401      {object}  response.APIResponse
+// @Router       /auth/refresh [post]
+func (r *clientRoutes) refresh(c *fiber.Ctx) error {
+	// 1. Get refresh token from cookie
+	refreshToken := c.Cookies("refresh_token")
+	if refreshToken == "" {
+		return response.Error(c, apperror.ErrUnauthorized)
+	}
+
+	// 2. Call Usecase
+	user, newAccessToken, newRefreshToken, err := r.authUseCase.Refresh(c.Context(), refreshToken)
+	if err != nil {
+		clearRefreshTokenCookie(c)
+		return response.Error(c, apperror.ErrUnauthorized)
+	}
+
+	// 3. Map Entity to DTO and package it
+	authData := AuthData{
+		User:        ToUserDTO(user),
+		AccessToken: newAccessToken,
+	}
+
+	// 4. Set new refresh token in HttpOnly Cookie
+	setRefreshTokenCookie(c, newRefreshToken)
+
+	// 5. Return standard Response
+	return response.Success(c, fiber.StatusOK, "Token refreshed successfully", authData)
+}
+
+// logout godoc
+// @Summary      Logout
+// @Description  Logout user and clear refresh token cookie
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Success      200      {object}  response.APIResponse
+// @Router       /auth/logout [post]
+func (r *clientRoutes) logout(c *fiber.Ctx) error {
+	clearRefreshTokenCookie(c)
+	return response.Success(c, fiber.StatusOK, "Logout successfully", nil)
 }

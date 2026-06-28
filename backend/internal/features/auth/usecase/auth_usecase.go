@@ -105,3 +105,29 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (entit
 
 	return user, accessToken, refreshToken, nil
 }
+
+// Refresh -.
+func (uc *AuthUseCase) Refresh(ctx context.Context, refreshToken string) (entity.User, string, string, error) {
+	user, err := uc.repo.GetByRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return entity.User{}, "", "", fmt.Errorf("invalid refresh token")
+	}
+
+	newAccessToken, err := uc.jwt.GenerateToken(user.ID)
+	if err != nil {
+		return entity.User{}, "", "", fmt.Errorf("AuthUseCase - Refresh - GenerateToken: %w", err)
+	}
+
+	newRefreshToken, err := uc.jwt.GenerateRefreshToken()
+	if err != nil {
+		return entity.User{}, "", "", fmt.Errorf("AuthUseCase - Refresh - GenerateRefreshToken: %w", err)
+	}
+
+	user.RefreshToken = newRefreshToken
+	err = uc.repo.Update(ctx, &user)
+	if err != nil {
+		return entity.User{}, "", "", fmt.Errorf("AuthUseCase - Refresh - uc.repo.Update: %w", err)
+	}
+
+	return user, newAccessToken, newRefreshToken, nil
+}

@@ -6,4 +6,4 @@ export * from './hooks/use-register';
 export * from './components/login-form';
 export * from './components/register-form';
 export * from './components/auth-guard';
-
+export * from './components/auth-provider';

@@ -12,8 +12,10 @@ type (
 	Config struct {
 		App     app
 		HTTP    http
+		CORS    corsConfig
 		Log     log
 		PG      pg
+		Redis   redisConfig
 		GRPC    grpc
 		RMQ     rmq
 		NATS    nats
@@ -25,7 +27,13 @@ type (
 	// App -.
 	app struct {
 		Name    string `env:"APP_NAME,required"`
+		Env     string `env:"APP_ENV" envDefault:"development"`
 		Version string `env:"APP_VERSION,required"`
+	}
+
+	// CORS -.
+	corsConfig struct {
+		AllowedOrigins string `env:"CORS_ALLOWED_ORIGINS" envDefault:"http://localhost:3000"`
 	}
 
 	// HTTP -.
@@ -43,6 +51,11 @@ type (
 	pg struct {
 		PoolMax int    `env:"PG_POOL_MAX,required"`
 		URL     string `env:"PG_URL,required"`
+	}
+
+	// Redis -.
+	redisConfig struct {
+		URL string `env:"REDIS_URL" envDefault:"localhost:6379"`
 	}
 
 	// GRPC -.
@@ -65,8 +78,9 @@ type (
 
 	// JWT -.
 	jwt struct {
-		Secret      string        `env:"JWT_SECRET,required"`
-		TokenExpiry time.Duration `env:"JWT_TOKEN_EXPIRY" envDefault:"24h"`
+		Secret             string        `env:"JWT_SECRET,required"`
+		AccessTokenExpiry  time.Duration `env:"JWT_ACCESS_TOKEN_EXPIRY" envDefault:"5m"`
+		RefreshTokenExpiry time.Duration `env:"JWT_REFRESH_TOKEN_EXPIRY" envDefault:"168h"`
 	}
 
 	// Metrics -.

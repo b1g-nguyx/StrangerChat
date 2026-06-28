@@ -39,7 +39,6 @@ type UserDTO struct {
 type AuthData struct {
 	User         UserDTO `json:"user"`
 	AccessToken  string  `json:"access_token"`
-	RefreshToken string  `json:"refresh_token"`
 }
 
 // ToUserDTO là một hàm helper để copy dữ liệu từ Entity sang DTO
