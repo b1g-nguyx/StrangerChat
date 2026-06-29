@@ -1,23 +1,31 @@
 import { apiClient } from '@/shared/lib/api-client';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '../types';
+import { AuthData, APIResponse, LoginRequest, RegisterRequest, User } from '../types';
 
 export const authApi = {
-  login: async (payload: LoginRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/login', payload);
-    return response.data;
+  login: async (payload: LoginRequest): Promise<AuthData> => {
+    const response = await apiClient.post<APIResponse<AuthData>>('/auth/login', payload);
+    return response.data.data;
   },
 
-  register: async (payload: RegisterRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/register', payload);
-    return response.data;
+  register: async (payload: RegisterRequest): Promise<AuthData> => {
+    const response = await apiClient.post<APIResponse<AuthData>>('/auth/register', payload);
+    return response.data.data;
   },
 
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout');
   },
 
-  getMe: async (): Promise<User> => {
-    const response = await apiClient.get<{data: User}>('/auth/me');
-    return response.data.data;
+  refreshToken: async (): Promise<string> => {
+    // Gọi trực tiếp để xin cấp lại token bằng HttpOnly cookie
+    const response = await apiClient.post<APIResponse<AuthData>>('/auth/refresh');
+    const newAccessToken = response.data.data.access_token;
+    
+    // Lưu token mới vào Zustand & LocalStorage
+    import('@/features/auth/store/auth.store').then(module => {
+      module.useAuthStore.getState().setAccessToken(newAccessToken);
+    });
+    
+    return newAccessToken;
   },
 };

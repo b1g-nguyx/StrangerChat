@@ -15,7 +15,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 512
+	maxMessageSize = 32768
 )
 
 type Client struct {
@@ -33,6 +33,9 @@ func (c *Client) ReadPump() {
 		c.Hub.Unregister <- c
 		if c.RoomID != "" && c.Usecase != nil {
 			c.Usecase.LeaveRoom(context.Background(), c.RoomID, c.UserID)
+		} else if c.Usecase != nil {
+			// If not in a room, maybe in queue. Remove them.
+			c.Usecase.CancelMatchmaking(context.Background(), c.UserID)
 		}
 		c.Conn.Close()
 	}()
@@ -87,6 +90,12 @@ func (c *Client) ReadPump() {
 				if c.Usecase != nil {
 					if err := c.Usecase.ReportUser(context.Background(), c.UserID, wsMsg.ReportedID, wsMsg.RoomID, wsMsg.Content); err != nil {
 						log.Printf("Failed to report user: %v", err)
+					}
+				}
+			case MsgTypeWebRTCOffer, MsgTypeWebRTCAnswer, MsgTypeWebRTCICECandid:
+				if c.RoomID != "" && c.Usecase != nil {
+					if err := c.Usecase.SendWebRTCSignal(context.Background(), c.RoomID, c.UserID, string(wsMsg.Type), wsMsg.Payload); err != nil {
+						log.Printf("Failed to send WebRTC signal: %v", err)
 					}
 				}
 			}

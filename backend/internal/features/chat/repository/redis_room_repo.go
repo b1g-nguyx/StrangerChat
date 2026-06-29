@@ -17,6 +17,7 @@ type RedisRoomRepo interface {
 	GetChatLog(ctx context.Context, roomID string) ([]entity.ChatMessage, error)
 	EnqueueMatchmaking(ctx context.Context, userID string) error
 	DequeueMatchmaking(ctx context.Context, timeout time.Duration) (string, error)
+	RemoveFromQueue(ctx context.Context, userID string) error
 	PublishEvent(ctx context.Context, channel string, payload interface{}) error
 	SubscribeEvent(ctx context.Context, channel string) *redis.PubSub
 }
@@ -84,6 +85,10 @@ func (r *redisRoomRepoImpl) DequeueMatchmaking(ctx context.Context, timeout time
 		return res[1], nil
 	}
 	return "", redis.Nil
+}
+
+func (r *redisRoomRepoImpl) RemoveFromQueue(ctx context.Context, userID string) error {
+	return r.client.LRem(ctx, "matchmaking_queue", 0, userID).Err()
 }
 
 func (r *redisRoomRepoImpl) PublishEvent(ctx context.Context, channel string, payload interface{}) error {

@@ -1,8 +1,10 @@
 import { Message, ConnectionStatus } from '../types';
+import { toast } from '@/shared/components/toast';
 
 type StatusCallback = (status: ConnectionStatus) => void;
 type MessageCallback = (message: Message | Message[] | ((prev: Message[]) => Message[])) => void;
 type RoomCallback = (roomId: string | null) => void;
+type WebRTCCallback = (type: string, payload: unknown) => void;
 
 class ChatSocketService {
   private ws: WebSocket | null = null;
@@ -12,6 +14,7 @@ class ChatSocketService {
   private onStatusChange?: StatusCallback;
   private onMessageReceived?: MessageCallback;
   private onRoomChange?: RoomCallback;
+  private onWebRTCSignal?: WebRTCCallback;
 
   // Set event listeners
   public subscribe(
@@ -24,6 +27,10 @@ class ChatSocketService {
     this.onRoomChange = onRoomChange;
   }
 
+  public subscribeWebRTC(onWebRTCSignal: WebRTCCallback) {
+    this.onWebRTCSignal = onWebRTCSignal;
+  }
+
   public connect(token: string) {
     this.token = token;
     if (this.ws) {
@@ -32,15 +39,18 @@ class ChatSocketService {
 
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws/chat';
     const wsEndpoint = `${wsUrl}?token=${token}`;
-    this.ws = new WebSocket(wsEndpoint);
+    const ws = new WebSocket(wsEndpoint);
+    this.ws = ws;
 
     this.onStatusChange?.('connecting');
 
-    this.ws.onopen = () => {
+    ws.onopen = () => {
+      if (this.ws !== ws) return;
       this.findMatch();
     };
 
-    this.ws.onmessage = (event) => {
+    ws.onmessage = (event) => {
+      if (this.ws !== ws) return;
       try {
         const data = JSON.parse(event.data);
 
@@ -50,6 +60,7 @@ class ChatSocketService {
             this.onRoomChange?.(this.roomId);
             this.onStatusChange?.('connected');
             this.onMessageReceived?.([]); // Xóa tin nhắn cũ
+            toast.success('Đã tìm thấy người lạ! Bắt đầu trò chuyện ngay.', 'Ghép phòng thành công');
             break;
             
           case 'CHAT':
@@ -77,6 +88,13 @@ class ChatSocketService {
                 timestamp: new Date(),
               },
             ]);
+            toast.info('Người lạ đã rời khỏi cuộc trò chuyện.', 'Kết thúc');
+            break;
+
+          case 'WEBRTC_OFFER':
+          case 'WEBRTC_ANSWER':
+          case 'WEBRTC_ICE_CANDIDATE':
+            this.onWebRTCSignal?.(data.type, data.payload);
             break;
         }
       } catch (err) {
@@ -84,13 +102,15 @@ class ChatSocketService {
       }
     };
 
-    this.ws.onclose = () => {
+    ws.onclose = () => {
+      if (this.ws !== ws) return;
       this.onStatusChange?.('disconnected');
       this.roomId = null;
       this.onRoomChange?.(null);
     };
 
-    this.ws.onerror = (error) => {
+    ws.onerror = (error) => {
+      if (this.ws !== ws) return;
       console.error('WebSocket Error:', error);
       this.onStatusChange?.('disconnected');
     };
@@ -132,6 +152,17 @@ class ChatSocketService {
         type: 'CHAT',
         room_id: this.roomId,
         content: text.trim(),
+      })
+    );
+  }
+
+  public sendWebRTCSignal(type: string, payload: unknown) {
+    if (!this.roomId || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(
+      JSON.stringify({
+        type: type,
+        room_id: this.roomId,
+        payload: payload,
       })
     );
   }

@@ -107,10 +107,28 @@ func (h *Hub) Run(ctx context.Context) {
 						receiver.Send <- chatMsgBytes
 					}
 				}
+			case "webrtc_signal":
+				roomID := event["room_id"].(string)
+				senderID := event["sender_id"].(string)
+				signalType := event["signal_type"].(string)
+				
+				signalMsg := WSMessage{
+					Type:    WSMessageType(signalType),
+					RoomID:  roomID,
+					Payload: event["payload"],
+				}
+				signalMsgBytes, _ := json.Marshal(signalMsg)
 
-				// Also send to sender if needed for local confirmation
-				if sender, ok := h.Clients[senderID]; ok {
-					sender.Send <- chatMsgBytes
+				for _, client := range h.Clients {
+					if client.RoomID == roomID && client.UserID != senderID {
+						// Run in goroutine to not block chat messages
+						go func(c *Client, msg []byte) {
+							select {
+							case c.Send <- msg:
+							default:
+							}
+						}(client, signalMsgBytes)
+					}
 				}
 			case "partner_left":
 				roomID := event["room_id"].(string)

@@ -1,6 +1,6 @@
 basePath: /v1
 definitions:
-  github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse:
+  github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse:
     properties:
       data:
         description: 'omitempty: hidden if nil'
@@ -12,14 +12,35 @@ definitions:
       time:
         type: string
     type: object
-  internal_controller_restapi_client_v1_auth.AuthData:
+  internal_features_auth_delivery_http.AdminAuthData:
+    properties:
+      access_token:
+        type: string
+      role:
+        type: string
+    type: object
+  internal_features_auth_delivery_http.AdminLoginRequest:
+    properties:
+      email:
+        type: string
+      otp:
+        description: 'Example: Admin requires 2FA'
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - otp
+    - password
+    type: object
+  internal_features_auth_delivery_http.AuthData:
     properties:
       access_token:
         type: string
       user:
-        $ref: '#/definitions/internal_controller_restapi_client_v1_auth.UserDTO'
+        $ref: '#/definitions/internal_features_auth_delivery_http.UserDTO'
     type: object
-  internal_controller_restapi_client_v1_auth.LoginRequest:
+  internal_features_auth_delivery_http.LoginRequest:
     properties:
       email:
         type: string
@@ -29,7 +50,7 @@ definitions:
     - email
     - password
     type: object
-  internal_controller_restapi_client_v1_auth.RegisterRequest:
+  internal_features_auth_delivery_http.RegisterRequest:
     properties:
       email:
         type: string
@@ -45,7 +66,7 @@ definitions:
     - password
     - username
     type: object
-  internal_controller_restapi_client_v1_auth.UserDTO:
+  internal_features_auth_delivery_http.UserDTO:
     properties:
       avatar_url:
         type: string
@@ -69,6 +90,56 @@ info:
   title: StrangerChat Client API
   version: "1.0"
 paths:
+  /admin/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login to admin dashboard (requires admin role)
+      parameters:
+      - description: Admin Login Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_features_auth_delivery_http.AdminLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_features_auth_delivery_http.AdminAuthData'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+      summary: Admin Login method
+      tags:
+      - Admin Auth
+  /admin/users:
+    get:
+      consumes:
+      - application/json
+      description: Get users with filtering (Admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
+      summary: Get list of users
+      tags:
+      - Admin User
   /auth/login:
     post:
       consumes:
@@ -80,7 +151,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_restapi_client_v1_auth.LoginRequest'
+          $ref: '#/definitions/internal_features_auth_delivery_http.LoginRequest'
       produces:
       - application/json
       responses:
@@ -88,19 +159,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/internal_controller_restapi_client_v1_auth.AuthData'
+                  $ref: '#/definitions/internal_features_auth_delivery_http.AuthData'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
       summary: Login method
       tags:
       - Auth
@@ -160,7 +231,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_controller_restapi_client_v1_auth.RegisterRequest'
+          $ref: '#/definitions/internal_features_auth_delivery_http.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -168,15 +239,15 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            - $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/internal_controller_restapi_client_v1_auth.AuthData'
+                  $ref: '#/definitions/internal_features_auth_delivery_http.AuthData'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse'
+            $ref: '#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse'
       summary: Register a new user
       tags:
       - Auth

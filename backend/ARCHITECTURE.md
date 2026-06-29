@@ -30,6 +30,13 @@ Location: `internal/features/<feature_name>/entity/`
 -   **Rule**: If a feature needs new fields, custom JSON mappings, or specific validation rules that other features do not care about, create a Feature Entity.
 -   **Example**: `features/chat/entity.ChatMessage` represents a message specifically formatted for WebSocket transmission and Redis storage within the chat feature. It encapsulates chat-specific behavior.
 
+## 3. Advanced Features Architecture
+
+### 3.1. Video Call Architecture (Self-hosted P2P)
+The Video Call functionality is built with a lightweight, peer-to-peer architecture:
+- **Signaling via WebSocket:** Utilizes the existing `svc-socket` as a Signaling Server. To maintain *Separation of Concerns* and prevent video signaling from blocking chat messages, WebRTC payloads (`WEBRTC_OFFER`, `WEBRTC_ANSWER`, `WEBRTC_ICE_CANDIDATE`) are processed asynchronously via non-blocking Goroutines.
+- **Direct Media Flow:** Video and audio data flow directly between clients (P2P), consuming zero backend bandwidth and ensuring high scalability at minimum server cost.
+
 ## Summary
 
 By strictly separating Core Data from Feature-Specific Data, we ensure that the codebase remains decoupled, easy to navigate, and ready to scale into microservices if necessary in the future.

@@ -9,6 +9,11 @@ const (
 	MsgTypeLeave       WSMessageType = "LEAVE_ROOM"
 	MsgTypePartnerLeft WSMessageType = "PARTNER_LEFT"
 	MsgTypeReport      WSMessageType = "REPORT"
+
+	// WebRTC Video Call Types
+	MsgTypeWebRTCOffer     WSMessageType = "WEBRTC_OFFER"
+	MsgTypeWebRTCAnswer    WSMessageType = "WEBRTC_ANSWER"
+	MsgTypeWebRTCICECandid WSMessageType = "WEBRTC_ICE_CANDIDATE"
 )
 
 type WSMessage struct {
@@ -16,6 +21,7 @@ type WSMessage struct {
 	RoomID     string        `json:"room_id,omitempty"`
 	ReportedID string        `json:"reported_id,omitempty"`
 	Content    string        `json:"content,omitempty"`
+	Payload    interface{}   `json:"payload,omitempty"` // For WebRTC SDP and ICE candidates
 }
 
 type BroadcastMessage struct {

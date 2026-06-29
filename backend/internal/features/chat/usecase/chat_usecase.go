@@ -18,8 +18,10 @@ type ChatUsecase interface {
 	SendMessage(ctx context.Context, roomID string, message entity.ChatMessage) error
 	ReportUser(ctx context.Context, reporterID, reportedID, roomID, reason string) error
 	FindMatch(ctx context.Context, userID string) error
+	CancelMatchmaking(ctx context.Context, userID string) error
 	LeaveRoom(ctx context.Context, roomID, userID string) error
 	StartMatchmakingWorker(ctx context.Context)
+	SendWebRTCSignal(ctx context.Context, roomID, userID, signalType string, payload interface{}) error
 }
 
 type chatUsecaseImpl struct {
@@ -67,6 +69,10 @@ func (u *chatUsecaseImpl) FindMatch(ctx context.Context, userID string) error {
 	return u.redisRepo.EnqueueMatchmaking(ctx, userID)
 }
 
+func (u *chatUsecaseImpl) CancelMatchmaking(ctx context.Context, userID string) error {
+	return u.redisRepo.RemoveFromQueue(ctx, userID)
+}
+
 func (u *chatUsecaseImpl) LeaveRoom(ctx context.Context, roomID, userID string) error {
 	// Publish an event that this user left the room
 	eventPayload := map[string]interface{}{
@@ -75,6 +81,17 @@ func (u *chatUsecaseImpl) LeaveRoom(ctx context.Context, roomID, userID string) 
 		"user_id": userID,
 	}
 	u.redisRepo.DeleteRoom(ctx, roomID) // Simple implementation: delete room on leave
+	return u.redisRepo.PublishEvent(ctx, "global_chat_events", eventPayload)
+}
+
+func (u *chatUsecaseImpl) SendWebRTCSignal(ctx context.Context, roomID, userID, signalType string, payload interface{}) error {
+	eventPayload := map[string]interface{}{
+		"type":        "webrtc_signal",
+		"room_id":     roomID,
+		"sender_id":   userID,
+		"signal_type": signalType,
+		"payload":     payload,
+	}
 	return u.redisRepo.PublishEvent(ctx, "global_chat_events", eventPayload)
 }
 
@@ -97,6 +114,12 @@ func (u *chatUsecaseImpl) StartMatchmakingWorker(ctx context.Context) {
 				user2, err := u.redisRepo.DequeueMatchmaking(ctx, 5*time.Second)
 				if err != nil {
 					// Put user1 back if we couldn't find user2 within timeout
+					u.redisRepo.EnqueueMatchmaking(ctx, user1)
+					continue
+				}
+
+				if user1 == user2 {
+					// Prevent matching with self if user sent multiple requests
 					u.redisRepo.EnqueueMatchmaking(ctx, user1)
 					continue
 				}

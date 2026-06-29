@@ -46,5 +46,5 @@ export function useChatSocket() {
     }, 500);
   }, [token]);
 
-  return { status, messages, sendMessage, findNewMatch };
+  return { status, messages, sendMessage, findNewMatch, roomId };
 }

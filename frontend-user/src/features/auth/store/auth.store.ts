@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { User, AuthResponse } from '../types';
+import { User, AuthData } from '../types';
 
 interface AuthState {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
-  setAuth: (data: AuthResponse) => void;
+  setAuth: (data: AuthData) => void;
   setAccessToken: (token: string) => void;
   setUser: (user: User) => void;
   logout: () => void;
@@ -16,11 +16,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   isAuthenticated: false,
 
-  setAuth: (data: AuthResponse) => {
-    set({ user: data.data, accessToken: data.access_token, isAuthenticated: true });
+  setAuth: (data: AuthData) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('access_token', data.access_token);
+    }
+    set({ user: data.user, accessToken: data.access_token, isAuthenticated: true });
   },
 
   setAccessToken: (token: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('access_token', token);
+    }
     set({ accessToken: token, isAuthenticated: true });
   },
 
@@ -29,6 +35,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+    }
     set({ user: null, accessToken: null, isAuthenticated: false });
   },
 }));

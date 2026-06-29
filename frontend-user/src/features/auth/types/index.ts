@@ -13,11 +13,15 @@ export interface User {
   banned_at?: string | null;
 }
 
-export interface AuthResponse {
-  message: string;
-  data: User;
+export interface AuthData {
+  user: User;
   access_token: string;
-  refresh_token: string;
+}
+
+export interface APIResponse<T> {
+  code: number;
+  message: string;
+  data: T;
 }
 
 export interface LoginRequest {

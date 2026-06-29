@@ -3,6 +3,7 @@ import { Settings, MessageCircle } from 'lucide-react';
 import { Header } from '@/shared/components/layout/Header';
 import { Footer } from '@/shared/components/layout/Footer';
 import { HeroSlider } from '@/shared/components/layout/HeroSlider';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -23,10 +24,12 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row w-full max-w-md gap-4 justify-center">
-            <Button size="lg" className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 text-lg">
-              <MessageCircle className="w-5 h-5" />
-              Start Chatting
-            </Button>
+            <Link href="/chat" className="w-full sm:w-auto flex-1">
+              <Button size="lg" className="w-full flex items-center justify-center gap-2 text-lg">
+                <MessageCircle className="w-5 h-5" />
+                Start Chatting
+              </Button>
+            </Link>
             <Button variant="secondary" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
               <Settings className="w-5 h-5" />
               Settings

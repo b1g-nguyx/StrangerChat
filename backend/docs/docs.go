@@ -15,6 +15,87 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/auth/login": {
+            "post": {
+                "description": "Login to admin dashboard (requires admin role)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Auth"
+                ],
+                "summary": "Admin Login method",
+                "parameters": [
+                    {
+                        "description": "Admin Login Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_features_auth_delivery_http.AdminLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_features_auth_delivery_http.AdminAuthData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "description": "Get users with filtering (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin User"
+                ],
+                "summary": "Get list of users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Login in system with username password",
@@ -35,7 +116,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.LoginRequest"
+                            "$ref": "#/definitions/internal_features_auth_delivery_http.LoginRequest"
                         }
                     }
                 ],
@@ -45,13 +126,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.AuthData"
+                                            "$ref": "#/definitions/internal_features_auth_delivery_http.AuthData"
                                         }
                                     }
                                 }
@@ -61,13 +142,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
                         }
                     }
                 }
@@ -166,7 +247,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.RegisterRequest"
+                            "$ref": "#/definitions/internal_features_auth_delivery_http.RegisterRequest"
                         }
                     }
                 ],
@@ -176,13 +257,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                                    "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.AuthData"
+                                            "$ref": "#/definitions/internal_features_auth_delivery_http.AuthData"
                                         }
                                     }
                                 }
@@ -192,7 +273,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse"
+                            "$ref": "#/definitions/github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse"
                         }
                     }
                 }
@@ -200,7 +281,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_b1g-nguyx_strangerchat-backend_pkg_response.APIResponse": {
+        "github_com_b1g-nguyx_strangerchat-backend_internal_common_response.APIResponse": {
             "type": "object",
             "properties": {
                 "data": {
@@ -218,18 +299,49 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_restapi_client_v1_auth.AuthData": {
+        "internal_features_auth_delivery_http.AdminAuthData": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_features_auth_delivery_http.AdminLoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "otp",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "otp": {
+                    "description": "Example: Admin requires 2FA",
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_features_auth_delivery_http.AuthData": {
             "type": "object",
             "properties": {
                 "access_token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/internal_controller_restapi_client_v1_auth.UserDTO"
+                    "$ref": "#/definitions/internal_features_auth_delivery_http.UserDTO"
                 }
             }
         },
-        "internal_controller_restapi_client_v1_auth.LoginRequest": {
+        "internal_features_auth_delivery_http.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -244,7 +356,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_restapi_client_v1_auth.RegisterRequest": {
+        "internal_features_auth_delivery_http.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -266,7 +378,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller_restapi_client_v1_auth.UserDTO": {
+        "internal_features_auth_delivery_http.UserDTO": {
             "type": "object",
             "properties": {
                 "avatar_url": {

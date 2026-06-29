@@ -55,6 +55,12 @@ Sử dụng để phục vụ tính năng tìm bạn và chat theo thời gian t
 *   Có tin nhắn tới: `{"type": "CHAT", "room_id": "...", "content": "..."}`
 *   Đối phương đã rời phòng: `{"type": "PARTNER_LEFT", "room_id": "..."}`
 
+**WebRTC Signaling (Truyền tín hiệu Video Call):**
+Luồng tín hiệu này dùng chung kết nối WebSocket của Chat để tối ưu tài nguyên. Server sẽ đóng vai trò Relay (Chuyển tiếp nguyên văn).
+*   Gửi/Nhận Offer: `{"type": "WEBRTC_OFFER", "room_id": "...", "payload": { /* sdp data */ }}`
+*   Gửi/Nhận Answer: `{"type": "WEBRTC_ANSWER", "room_id": "...", "payload": { /* sdp data */ }}`
+*   Gửi/Nhận ICE: `{"type": "WEBRTC_ICE_CANDIDATE", "room_id": "...", "payload": { /* candidate data */ }}`
+
 **Ví dụ Code Frontend:**
 ```javascript
 // Khởi tạo kết nối WebSocket với Token
@@ -99,4 +105,6 @@ socket.onmessage = (event) => {
 ---
 
 ## 5. Lịch sử cập nhật (Changelog)
-- **Cập nhật mới nhất:** Đã sửa lỗi không thể nhắn tin sau khi ghép phòng. Biến `room_id` ở phía client (trên server) giờ đã được gán chính xác khi sự kiện `matched` xảy ra. Đồng thời khi đối phương ngắt kết nối (`partner_left`), trạng thái phòng của người còn lại sẽ được dọn dẹp sạch sẽ để sẵn sàng tìm người mới.
+- **Cập nhật mới nhất:** 
+  - Triển khai **Video Call Giai đoạn 1**: Bổ sung các Message Type (`WEBRTC_OFFER`, `WEBRTC_ANSWER`, `WEBRTC_ICE_CANDIDATE`) để `svc-socket` gánh thêm nhiệm vụ Signaling Server cho WebRTC P2P.
+  - Đã sửa lỗi không thể nhắn tin sau khi ghép phòng. Biến `room_id` ở phía client (trên server) giờ đã được gán chính xác khi sự kiện `matched` xảy ra. Đồng thời khi đối phương ngắt kết nối (`partner_left`), trạng thái phòng của người còn lại sẽ được dọn dẹp sạch sẽ để sẵn sàng tìm người mới.
